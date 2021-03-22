@@ -220,10 +220,11 @@ impl<E> MultiexpKernel<E>
 where
     E: Engine,
 {
-    pub fn create(priority: bool) -> GPUResult<MultiexpKernel<E>> {
+    pub fn create(priority: bool, a_flag: usize) -> GPUResult<MultiexpKernel<E>> {
         let lock = locks::GPULock::lock();
 
-        let devices = opencl::Device::all()?;
+        let devices_all = opencl::Device::all()?;
+        let devices = vec![devices_all[a_flag].clone()];
 
         let kernels: Vec<_> = devices
             .into_iter()
