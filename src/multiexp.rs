@@ -53,7 +53,7 @@ impl<G: CurveAffine> Source<G> for (Arc<Vec<G>>, usize) {
                 io::ErrorKind::UnexpectedEof,
                 "expected more bases from source",
             )
-            .into());
+                .into());
         }
 
         if self.0[self.1].is_zero() {
@@ -73,7 +73,7 @@ impl<G: CurveAffine> Source<G> for (Arc<Vec<G>>, usize) {
                 io::ErrorKind::UnexpectedEof,
                 "expected more bases from source",
             )
-            .into());
+                .into());
         }
 
         self.1 += amt;
@@ -84,7 +84,7 @@ impl<G: CurveAffine> Source<G> for (Arc<Vec<G>>, usize) {
 
 pub trait QueryDensity {
     /// Returns whether the base exists.
-    type Iter: Iterator<Item = bool>;
+    type Iter: Iterator<Item=bool>;
 
     fn iter(self) -> Self::Iter;
     fn get_query_size(self) -> Option<usize>;
@@ -198,18 +198,18 @@ fn multiexp_inner<Q, D, G, S>(
     exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
     c: u32,
 ) -> Result<<G as CurveAffine>::Projective, SynthesisError>
-where
-    for<'a> &'a Q: QueryDensity,
-    D: Send + Sync + 'static + Clone + AsRef<Q>,
-    G: CurveAffine,
-    S: SourceBuilder<G>,
+    where
+            for<'a> &'a Q: QueryDensity,
+            D: Send + Sync + 'static + Clone + AsRef<Q>,
+            G: CurveAffine,
+            S: SourceBuilder<G>,
 {
     // Perform this region of the multiexp
     let this = move |bases: S,
                      density_map: D,
                      exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
                      skip: u32|
-          -> Result<_, SynthesisError> {
+                     -> Result<_, SynthesisError> {
         // Accumulate the result
         let mut acc = G::Projective::zero();
 
@@ -291,12 +291,12 @@ pub fn multiexp<Q, D, G, S>(
     exponents: Arc<Vec<<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr>>,
     kern: &mut Option<gpu::LockedMultiexpKernel<G::Engine>>,
 ) -> Waiter<Result<<G as CurveAffine>::Projective, SynthesisError>>
-where
-    for<'a> &'a Q: QueryDensity,
-    D: Send + Sync + 'static + Clone + AsRef<Q>,
-    G: CurveAffine,
-    G::Engine: crate::bls::Engine,
-    S: SourceBuilder<G>,
+    where
+            for<'a> &'a Q: QueryDensity,
+            D: Send + Sync + 'static + Clone + AsRef<Q>,
+            G: CurveAffine,
+            G::Engine: crate::bls::Engine,
+            S: SourceBuilder<G>,
 {
     if let Some(ref mut kern) = kern {
         if let Ok(p) = kern.with(|k: &mut gpu::MultiexpKernel<G::Engine>| {
@@ -330,15 +330,15 @@ where
 
     let result = pool.compute(move || multiexp_inner(bases, density_map, exponents, c));
     #[cfg(feature = "gpu")]
-    {
-        // Do not give the control back to the caller till the
-        // multiexp is done. We may want to reacquire the GPU again
-        // between the multiexps.
-        let result = result.wait();
-        Waiter::done(result)
-    }
+        {
+            // Do not give the control back to the caller till the
+            // multiexp is done. We may want to reacquire the GPU again
+            // between the multiexps.
+            let result = result.wait();
+            Waiter::done(result)
+        }
     #[cfg(not(feature = "gpu"))]
-    result
+        result
 }
 
 #[cfg(any(feature = "pairing", feature = "blst"))]
@@ -392,11 +392,11 @@ fn test_with_bls12() {
     assert_eq!(naive, fast);
 }
 
-pub fn create_multiexp_kernel<E>(_log_d: usize, priority: bool) -> Option<gpu::MultiexpKernel<E>>
-where
-    E: crate::bls::Engine,
+pub fn create_multiexp_kernel<E>(_log_d: usize, priority: bool, a_flag: usize) -> Option<gpu::MultiexpKernel<E>>
+    where
+        E: crate::bls::Engine,
 {
-    match gpu::MultiexpKernel::<E>::create(priority) {
+    match gpu::MultiexpKernel::<E>::create(priority, a_flag) {
         Ok(k) => {
             info!("GPU Multiexp kernel instantiated!");
             Some(k)

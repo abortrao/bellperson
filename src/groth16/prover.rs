@@ -73,6 +73,7 @@ struct ProvingAssignment<E: Engine> {
     input_assignment: Vec<E::Fr>,
     aux_assignment: Vec<E::Fr>,
 }
+
 use std::fmt;
 
 impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
@@ -141,10 +142,10 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
     }
 
     fn alloc<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
-    where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
-        A: FnOnce() -> AR,
-        AR: Into<String>,
+        where
+            F: FnOnce() -> Result<E::Fr, SynthesisError>,
+            A: FnOnce() -> AR,
+            AR: Into<String>,
     {
         self.aux_assignment.push(f()?);
         self.a_aux_density.add_element();
@@ -154,10 +155,10 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
     }
 
     fn alloc_input<F, A, AR>(&mut self, _: A, f: F) -> Result<Variable, SynthesisError>
-    where
-        F: FnOnce() -> Result<E::Fr, SynthesisError>,
-        A: FnOnce() -> AR,
-        AR: Into<String>,
+        where
+            F: FnOnce() -> Result<E::Fr, SynthesisError>,
+            A: FnOnce() -> AR,
+            AR: Into<String>,
     {
         self.input_assignment.push(f()?);
         self.b_input_density.add_element();
@@ -166,12 +167,12 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
     }
 
     fn enforce<A, AR, LA, LB, LC>(&mut self, _: A, a: LA, b: LB, c: LC)
-    where
-        A: FnOnce() -> AR,
-        AR: Into<String>,
-        LA: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LB: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
-        LC: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+        where
+            A: FnOnce() -> AR,
+            AR: Into<String>,
+            LA: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+            LB: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
+            LC: FnOnce(LinearCombination<E>) -> LinearCombination<E>,
     {
         let a = a(LinearCombination::zero());
         let b = b(LinearCombination::zero());
@@ -208,9 +209,9 @@ impl<E: Engine> ConstraintSystem<E> for ProvingAssignment<E> {
     }
 
     fn push_namespace<NR, N>(&mut self, _: N)
-    where
-        NR: Into<String>,
-        N: FnOnce() -> NR,
+        where
+            NR: Into<String>,
+            N: FnOnce() -> NR,
     {
         // Do nothing; we don't care about namespaces in this context.
     }
@@ -248,16 +249,17 @@ pub fn create_random_proof_batch_priority<E, C, R, P: ParameterSource<E>>(
     params: P,
     rng: &mut R,
     priority: bool,
+    a_flag:usize,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
-where
-    E: Engine,
-    C: Circuit<E> + Send,
-    R: RngCore,
+    where
+        E: Engine,
+        C: Circuit<E> + Send,
+        R: RngCore,
 {
     let r_s = (0..circuits.len()).map(|_| E::Fr::random(rng)).collect();
     let s_s = (0..circuits.len()).map(|_| E::Fr::random(rng)).collect();
 
-    create_proof_batch_priority::<E, C, P>(circuits, params, r_s, s_s, priority)
+    create_proof_batch_priority::<E, C, P>(circuits, params, r_s, s_s, priority,a_flag)
 }
 
 pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
@@ -266,10 +268,11 @@ pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     r_s: Vec<E::Fr>,
     s_s: Vec<E::Fr>,
     priority: bool,
+    a_flag: usize,
 ) -> Result<Vec<Proof<E>>, SynthesisError>
-where
-    E: Engine,
-    C: Circuit<E> + Send,
+    where
+        E: Engine,
+        C: Circuit<E> + Send,
 {
     info!("Bellperson {} is being used!", BELLMAN_VERSION);
 
@@ -301,14 +304,14 @@ where
     }
 
     #[cfg(feature = "gpu")]
-    let prio_lock = if priority {
+        let prio_lock = if priority {
         trace!("acquiring priority lock");
         Some(PriorityLock::lock())
     } else {
         None
     };
 
-    let mut fft_kern = Some(LockedFFTKernel::<E>::new(log_d, priority));
+    let mut fft_kern = Some(LockedFFTKernel::<E>::new(log_d, priority,a_flag));
 
     let a_s = provers
         .iter_mut()
@@ -344,7 +347,7 @@ where
         .collect::<Result<Vec<_>, SynthesisError>>()?;
 
     drop(fft_kern);
-    let mut multiexp_kern = Some(LockedMultiexpKernel::<E>::new(log_d, priority));
+    let mut multiexp_kern = Some(LockedMultiexpKernel::<E>::new(log_d, priority,a_flag));
 
     let h_s = a_s
         .into_iter()
@@ -462,9 +465,9 @@ where
         .zip(s_s.into_iter())
         .map(
             |(
-                (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
-                s,
-            )| {
+                 (((h, l), (a_inputs, a_aux, b_g1_inputs, b_g1_aux, b_g2_inputs, b_g2_aux)), r),
+                 s,
+             )| {
                 if vk.delta_g1.is_zero() || vk.delta_g2.is_zero() {
                     // If this element is zero, someone is trying to perform a
                     // subversion-CRS attack.
@@ -511,10 +514,10 @@ where
         .collect::<Result<Vec<_>, SynthesisError>>()?;
 
     #[cfg(feature = "gpu")]
-    {
-        trace!("dropping priority lock");
-        drop(prio_lock);
-    }
+        {
+            trace!("dropping priority lock");
+            drop(prio_lock);
+        }
 
     let proof_time = start.elapsed();
     info!("prover time: {:?}", proof_time);
@@ -533,9 +536,9 @@ fn create_proof_batch_priority_inner<E, C>(
     ),
     SynthesisError,
 >
-where
-    E: Engine,
-    C: Circuit<E> + Send,
+    where
+        E: Engine,
+        C: Circuit<E> + Send,
 {
     let mut provers = circuits
         .into_par_iter()

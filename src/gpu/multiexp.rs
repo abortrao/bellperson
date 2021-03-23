@@ -34,8 +34,8 @@ pub fn get_cpu_utilization() -> f64 {
 
 // Multiexp kernel for a single GPU
 pub struct SingleMultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     program: opencl::Program,
 
@@ -82,8 +82,8 @@ fn calc_best_chunk_size(max_window_size: usize, core_count: usize, exp_bits: usi
 }
 
 fn calc_chunk_size<E>(mem: u64, core_count: usize) -> usize
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     let aff_size = std::mem::size_of::<E::G1Affine>() + std::mem::size_of::<E::G2Affine>();
     let exp_size = exp_size::<E>();
@@ -98,8 +98,8 @@ fn exp_size<E: Engine>() -> usize {
 }
 
 impl<E> SingleMultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     pub fn create(d: opencl::Device, priority: bool) -> GPUResult<SingleMultiexpKernel<E>> {
         let src = sources::kernel::<E>(d.brand() == opencl::Brand::Nvidia);
@@ -126,8 +126,8 @@ where
         exps: &[<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr],
         n: usize,
     ) -> GPUResult<<G as CurveAffine>::Projective>
-    where
-        G: CurveAffine,
+        where
+            G: CurveAffine,
     {
         if locks::PriorityLock::should_break(self.priority) {
             return Err(GPUError::GPUTaken);
@@ -210,21 +210,22 @@ where
 
 // A struct that containts several multiexp kernels for different devices
 pub struct MultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     kernels: Vec<SingleMultiexpKernel<E>>,
     _lock: locks::GPULock, // RFC 1857: struct fields are dropped in the same order as they are declared.
 }
 
 impl<E> MultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
-    pub fn create(priority: bool) -> GPUResult<MultiexpKernel<E>> {
+    pub fn create(priority: bool, a_flag: usize) -> GPUResult<MultiexpKernel<E>> {
         let lock = locks::GPULock::lock();
 
-        let devices = opencl::Device::all()?;
+        let devices_all = opencl::Device::all()?;
+        let devices = vec![devices_all[a_flag].clone()];
 
         let kernels: Vec<_> = devices
             .into_iter()
@@ -271,9 +272,9 @@ where
         skip: usize,
         n: usize,
     ) -> GPUResult<<G as CurveAffine>::Projective>
-    where
-        G: CurveAffine,
-        <G as groupy::CurveAffine>::Engine: crate::bls::Engine,
+        where
+            G: CurveAffine,
+            <G as groupy::CurveAffine>::Engine: crate::bls::Engine,
     {
         let num_devices = self.kernels.len();
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
@@ -293,21 +294,21 @@ where
         let results = crate::multicore::THREAD_POOL.install(|| {
             if n > 0 {
                 bases
-                .par_chunks(chunk_size)
-                .zip(exps.par_chunks(chunk_size))
-                .zip(self.kernels.par_iter_mut())
-                .map(|((bases, exps), kern)| -> Result<<G as CurveAffine>::Projective, GPUError> {
-                    let mut acc = <G as CurveAffine>::Projective::zero();
-                    for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
-                        match kern.multiexp(bases, exps, bases.len()) {
-                            Ok(result) => acc.add_assign(&result),
-                            Err(e) => return Err(e),
+                    .par_chunks(chunk_size)
+                    .zip(exps.par_chunks(chunk_size))
+                    .zip(self.kernels.par_iter_mut())
+                    .map(|((bases, exps), kern)| -> Result<<G as CurveAffine>::Projective, GPUError> {
+                        let mut acc = <G as CurveAffine>::Projective::zero();
+                        for (bases, exps) in bases.chunks(kern.n).zip(exps.chunks(kern.n)) {
+                            match kern.multiexp(bases, exps, bases.len()) {
+                                Ok(result) => acc.add_assign(&result),
+                                Err(e) => return Err(e),
+                            }
                         }
-                    }
 
-                    Ok(acc)
-                })
-                .collect::<Vec<_>>()
+                        Ok(acc)
+                    })
+                    .collect::<Vec<_>>()
             } else {
                 Vec::new()
             }

@@ -8,26 +8,29 @@ use log::info;
 use rust_gpu_tools::*;
 use std::cmp;
 
-const LOG2_MAX_ELEMENTS: usize = 32; // At most 2^32 elements is supported.
-const MAX_LOG2_RADIX: u32 = 8; // Radix256
+const LOG2_MAX_ELEMENTS: usize = 32;
+// At most 2^32 elements is supported.
+const MAX_LOG2_RADIX: u32 = 8;
+// Radix256
 const MAX_LOG2_LOCAL_WORK_SIZE: u32 = 7; // 128
 
 pub struct FFTKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     program: opencl::Program,
     pq_buffer: opencl::Buffer<E::Fr>,
     omegas_buffer: opencl::Buffer<E::Fr>,
-    _lock: locks::GPULock, // RFC 1857: struct fields are dropped in the same order as they are declared.
+    _lock: locks::GPULock,
+    // RFC 1857: struct fields are dropped in the same order as they are declared.
     priority: bool,
 }
 
 impl<E> FFTKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
-    pub fn create(priority: bool) -> GPUResult<FFTKernel<E>> {
+    pub fn create(priority: bool, a_flag: usize) -> GPUResult<FFTKernel<E>> {
         let lock = locks::GPULock::lock();
 
         let devices = opencl::Device::all()?;
@@ -36,14 +39,14 @@ where
         }
 
         // Select the first device for FFT
-        let device = devices[0].clone();
+        let device = devices[a_flag].clone();
 
         let src = sources::kernel::<E>(device.brand() == opencl::Brand::Nvidia);
 
         let program = opencl::Program::from_opencl(device, &src)?;
         let pq_buffer = program.create_buffer::<E::Fr>(1 << MAX_LOG2_RADIX >> 1)?;
         let omegas_buffer = program.create_buffer::<E::Fr>(LOG2_MAX_ELEMENTS)?;
-
+        info!("FFT: xjtest local rust, {} devices selected,device name  {} ", a_flag, program.device().name());
         info!("FFT: 1 working device(s) selected.");
         info!("FFT: Device 0: {}", program.device().name());
 

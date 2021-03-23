@@ -91,17 +91,19 @@ macro_rules! locked_kernel {
             log_d: usize,
             priority: bool,
             kernel: Option<$kern<E>>,
+            a_flag: usize,
         }
 
         impl<E> $class<E>
         where
             E: Engine,
         {
-            pub fn new(log_d: usize, priority: bool) -> $class<E> {
+            pub fn new(log_d: usize, priority: bool,a_flag:usize) -> $class<E> {
                 $class::<E> {
                     log_d,
                     priority,
                     kernel: None,
+                    a_flag,
                 }
             }
 
@@ -109,7 +111,7 @@ macro_rules! locked_kernel {
                 if self.kernel.is_none() {
                     PriorityLock::wait(self.priority);
                     info!("GPU is available for {}!", $name);
-                    self.kernel = $func::<E>(self.log_d, self.priority);
+                    self.kernel = $func::<E>(self.log_d, self.priority,self.a_flag);
                 }
             }
 
