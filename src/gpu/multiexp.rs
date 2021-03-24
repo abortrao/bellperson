@@ -222,19 +222,17 @@ impl<E> MultiexpKernel<E>
 {
     pub fn create(priority: bool, a_flag: usize) -> GPUResult<MultiexpKernel<E>> {
         let lock = locks::GPULock::lock();
-        info!("xjgw: current select flag: {} ", a_flag);
+        info!("Multiexp: xjgw: current select flag: {} ", a_flag);
         let devices_all = opencl::Device::all()?;
-        info!("xjgw: current devides list info ");
+        info!("Multiexp: xjgw: current devides list info ");
         for device in devices_all.clone() {
-            info!("xjgw: device info: {}，{},{},{},{}", device.brand().platform_name(), device.name(), device.memory(), device.bus_id(), device.device)
+            info!("Multiexp: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, device.brand().platform_name(), device.name(), device.memory(), device.bus_id());
         }
-
         let devices = vec![devices_all[a_flag].clone()];
-        info!("xjgw: print selected devices info");
+        info!("Multiexp: xjgw: print selected devices info");
         for dev in devices.clone() {
-            info!("xjgw: device info: {}，{},{},{},{}", dev.brand().platform_name(), dev.name(), dev.memory(), dev.bus_id(), dev.device)
+            info!("Multiexp: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, device.brand().platform_name(), device.name(), device.memory(), device.bus_id());
         }
-
 
         let kernels: Vec<_> = devices
             .into_iter()

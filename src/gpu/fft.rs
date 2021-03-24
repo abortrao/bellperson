@@ -49,7 +49,7 @@ impl<E> FFTKernel<E>
         let program = opencl::Program::from_opencl(device, &src)?;
         let pq_buffer = program.create_buffer::<E::Fr>(1 << MAX_LOG2_RADIX >> 1)?;
         let omegas_buffer = program.create_buffer::<E::Fr>(LOG2_MAX_ELEMENTS)?;
-        info!("FFT: xjgw  {} flag is selected; deviceName: {} ", a_flag, program.device().name());
+        info!("FFT: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, device.brand().platform_name(), device.name(), device.memory(), device.bus_id());
         info!("FFT: 1 working device(s) selected.");
         info!("FFT: Device 0: {}", program.device().name());
 
