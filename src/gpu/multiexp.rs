@@ -33,8 +33,8 @@ pub fn get_cpu_utilization() -> f64 {
 
 // Multiexp kernel for a single GPU
 pub struct SingleMultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     program: opencl::Program,
 
@@ -81,8 +81,8 @@ fn calc_best_chunk_size(max_window_size: usize, core_count: usize, exp_bits: usi
 }
 
 fn calc_chunk_size<E>(mem: u64, core_count: usize) -> usize
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     let aff_size = std::mem::size_of::<E::G1Affine>() + std::mem::size_of::<E::G2Affine>();
     let exp_size = exp_size::<E>();
@@ -97,8 +97,8 @@ fn exp_size<E: Engine>() -> usize {
 }
 
 impl<E> SingleMultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     pub fn create(d: opencl::Device, priority: bool) -> GPUResult<SingleMultiexpKernel<E>> {
         let src = sources::kernel::<E>(d.brand() == opencl::Brand::Nvidia);
@@ -125,8 +125,8 @@ where
         exps: &[<<G::Engine as ScalarEngine>::Fr as PrimeField>::Repr],
         n: usize,
     ) -> GPUResult<<G as CurveAffine>::Projective>
-    where
-        G: CurveAffine,
+        where
+            G: CurveAffine,
     {
         if locks::PriorityLock::should_break(self.priority) {
             return Err(GPUError::GPUTaken);
@@ -209,22 +209,32 @@ where
 
 // A struct that containts several multiexp kernels for different devices
 pub struct MultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     kernels: Vec<SingleMultiexpKernel<E>>,
     _lock: locks::GPULock, // RFC 1857: struct fields are dropped in the same order as they are declared.
 }
 
 impl<E> MultiexpKernel<E>
-where
-    E: Engine,
+    where
+        E: Engine,
 {
     pub fn create(priority: bool, a_flag: usize) -> GPUResult<MultiexpKernel<E>> {
         let lock = locks::GPULock::lock();
-
+        info!("xjgw: current select flag: {} ", a_flag);
         let devices_all = opencl::Device::all()?;
+        info!("xjgw: current devides list info ");
+        for device in devices_all.clone() {
+            info!("xjgw: device info: {}，{},{},{},{}", device.brand().platform_name(), device.name(), device.memory(), device.bus_id(), device.device)
+        }
+
         let devices = vec![devices_all[a_flag].clone()];
+        info!("xjgw: print selected devices info");
+        for dev in devices.clone() {
+            info!("xjgw: device info: {}，{},{},{},{}", dev.brand().platform_name(), dev.name(), dev.memory(), dev.bus_id(), dev.device)
+        }
+
 
         let kernels: Vec<_> = devices
             .into_iter()
@@ -271,9 +281,9 @@ where
         skip: usize,
         n: usize,
     ) -> GPUResult<<G as CurveAffine>::Projective>
-    where
-        G: CurveAffine,
-        <G as groupy::CurveAffine>::Engine: crate::bls::Engine,
+        where
+            G: CurveAffine,
+            <G as groupy::CurveAffine>::Engine: crate::bls::Engine,
     {
         let num_devices = self.kernels.len();
         // Bases are skipped by `self.1` elements, when converted from (Arc<Vec<G>>, usize) to Source
