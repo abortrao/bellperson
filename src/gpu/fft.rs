@@ -46,11 +46,10 @@ impl<E> FFTKernel<E>
 
         let src = sources::kernel::<E>(device.brand() == opencl::Brand::Nvidia);
 
+        info!("FFT: xjgw  {} flag is selected;  name {} ,memory {},busId {}", a_flag, device.name(), device.memory(), device.bus_id());
         let program = opencl::Program::from_opencl(device, &src)?;
         let pq_buffer = program.create_buffer::<E::Fr>(1 << MAX_LOG2_RADIX >> 1)?;
         let omegas_buffer = program.create_buffer::<E::Fr>(LOG2_MAX_ELEMENTS)?;
-        let dev1 = device.clone();
-        info!("FFT: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, dev1.brand().platform_name(), dev1.name(), dev1.memory(), dev1.bus_id());
         info!("FFT: 1 working device(s) selected.");
         info!("FFT: Device 0: {}", program.device().name());
 

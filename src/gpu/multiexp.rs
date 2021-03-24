@@ -226,12 +226,12 @@ impl<E> MultiexpKernel<E>
         let devices_all = opencl::Device::all()?;
         info!("Multiexp: xjgw: current devides list info ");
         for dev1 in devices_all.clone() {
-            info!("Multiexp: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, dev1.brand().platform_name(), dev1.name(), dev1.memory(), dev1.bus_id());
+            info!("Multiexp: xjgw  {} flag is selected;  name {} ,memory {},busId {}", a_flag, dev1.name(), dev1.memory(), dev1.bus_id());
         }
         let devices = vec![devices_all[a_flag].clone()];
         info!("Multiexp: xjgw: print selected devices info");
         for dev2 in devices.clone() {
-            info!("Multiexp: xjgw  {} flag is selected; brand {}, name {} ,memory {},busId {}", a_flag, dev2.brand().platform_name(), dev2.name(), dev2.memory(), dev2.bus_id());
+            info!("Multiexp: xjgw  {} flag is selected;  name {} ,memory {},busId {}", a_flag, dev2.name(), dev2.memory(), dev2.bus_id());
         }
 
         let kernels: Vec<_> = devices
