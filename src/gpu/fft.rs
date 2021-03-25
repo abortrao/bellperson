@@ -43,10 +43,10 @@ impl<E> FFTKernel<E>
 
         let src = sources::kernel::<E>(device.brand() == opencl::Brand::Nvidia);
 
+        info!("FFT: xjtest  {} flag is selected,  name: {} , memory: {} , busId: {} ", a_flag, device.name(), device.memory(), device.bus_id());
         let program = opencl::Program::from_opencl(device, &src)?;
         let pq_buffer = program.create_buffer::<E::Fr>(1 << MAX_LOG2_RADIX >> 1)?;
         let omegas_buffer = program.create_buffer::<E::Fr>(LOG2_MAX_ELEMENTS)?;
-        info!("FFT: xjtest local rust, {} devices selected,device name  {} ", a_flag, program.device().name());
         info!("FFT: 1 working device(s) selected.");
         info!("FFT: Device 0: {}", program.device().name());
 
