@@ -75,6 +75,8 @@ struct ProvingAssignment<E: Engine> {
 }
 
 use std::fmt;
+use std::fs::File;
+use std::env::temp_dir;
 
 impl<E: Engine> fmt::Debug for ProvingAssignment<E> {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
@@ -310,9 +312,7 @@ pub fn create_proof_batch_priority<E, C, P: ParameterSource<E>>(
     } else {
         None
     };
-
     let mut fft_kern = Some(LockedFFTKernel::<E>::new(log_d, priority,a_flag));
-
     let a_s = provers
         .iter_mut()
         .map(|prover| {

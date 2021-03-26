@@ -214,7 +214,7 @@ pub struct MultiexpKernel<E>
         E: Engine,
 {
     kernels: Vec<SingleMultiexpKernel<E>>,
-    _lock: locks::GPULock, // RFC 1857: struct fields are dropped in the same order as they are declared.
+    // _lock: locks::GPULock, // RFC 1857: struct fields are dropped in the same order as they are declared.
 }
 
 impl<E> MultiexpKernel<E>
@@ -222,7 +222,7 @@ impl<E> MultiexpKernel<E>
         E: Engine,
 {
     pub fn create(priority: bool, a_flag: usize) -> GPUResult<MultiexpKernel<E>> {
-        let lock = locks::GPULock::lock();
+        // let lock = locks::GPULock::lock();
 
         let devices_all = opencl::Device::all()?;
         let devices = vec![devices_all[a_flag].clone()];
@@ -269,7 +269,7 @@ impl<E> MultiexpKernel<E>
         }
         Ok(MultiexpKernel::<E> {
             kernels,
-            _lock: lock,
+            //  _lock: lock,
         })
     }
 

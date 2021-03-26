@@ -21,7 +21,7 @@ pub struct FFTKernel<E>
     program: opencl::Program,
     pq_buffer: opencl::Buffer<E::Fr>,
     omegas_buffer: opencl::Buffer<E::Fr>,
-    _lock: locks::GPULock,
+    //_lock: locks::GPULock,
     // RFC 1857: struct fields are dropped in the same order as they are declared.
     priority: bool,
 }
@@ -31,7 +31,7 @@ impl<E> FFTKernel<E>
         E: Engine,
 {
     pub fn create(priority: bool, a_flag: usize) -> GPUResult<FFTKernel<E>> {
-        let lock = locks::GPULock::lock();
+        // let lock = locks::GPULock::lock();
 
         let devices = opencl::Device::all()?;
         if devices.is_empty() {
@@ -54,7 +54,7 @@ impl<E> FFTKernel<E>
             program,
             pq_buffer,
             omegas_buffer,
-            _lock: lock,
+            //  _lock: lock,
             priority,
         })
     }
